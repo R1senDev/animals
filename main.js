@@ -1,11 +1,3 @@
-let canvas = document.getElementById('canvas');
-let context = canvas.getContext('2d');
-
-function resizeCanvas() {
-	canvas.width = window.innerWidth;
-	canvas.height = window.innerHeight;
-}
-
 let cursor = {
 	aim: {
 		animated: false,
@@ -17,14 +9,14 @@ cursor.aim.frames[0].src = 'cursors/aim/1.png';
 
 let gamepadAPI = {
 	controller: {},
-	turbo: false,
+	connected: false,
 	connect: function(event) {
 		gamepadAPI.controller = event.gamepad;
-		gamepadAPI.turbo = true;
+		gamepadAPI.connected = true;
 		console.log('Gamepad connected!\n' + gamepadAPI.controller);
 	},
 	disconnect: function(event) {
-		gamepadAPI.turbo = false;
+		gamepadAPI.connected = false;
 		delete gamepadAPI.controller;
 		console.log('Gamepad disconnected');
 	},
@@ -85,7 +77,7 @@ let gamepadAPI = {
 		return newPress;
 	},
 	buttons: ['DPad-Up', 'DPad-Down', 'DPad-Left', 'DPad-Right', 'Start', 'Back', 'Axis-Left', 'Axis-Right','LB', 'RB', 'Power', 'A', 'B', 'X', 'Y'],
-	buttonsCache: []
+	buttonsCache: [],
 	buttonsStatus: [],
 	axesStatus: []
 };
@@ -95,6 +87,108 @@ window.addEventListener('gamepaddisconnected', gamepadAPI.disconnect);
 
 let kbKeysPressed = new Map();
 
+let map = [['deepWater', 'water', 'shoreWater', 'sand', 'sand', 'grass']];
+
 class Animal {
-	constructor() {}
+	constructor(x, y, type) {
+		this.type = type;
+		switch (type) {
+			case 'wolf':
+				this.hp = 100;
+				this.damage = 25;
+				this.size = {width: 2, height: 2};
+				this.color = '#4d4d4d';
+				// Used to define relationships with other animals
+				this.strength = 50;
+				this.speed = {
+					wandering: 1,
+					running: 2,
+				};
+				this.fov = 20;
+				this.surfaces = {
+					land: true,
+					water: false
+				};
+				this.flies = false;
+				this.predator = true;
+				break;
+
+			case 'sheep':
+				this.hp = 100;
+				this.damage = 0;
+				this.size = {width: 2, height: 2};
+				this.color = '#ffffff';
+				// Used to define relationships with other animals
+				this.strength = 10;
+				this.speed = {
+					wandering: 1,
+					running: 1.5,
+				};
+				this.fov = 15;
+				this.surfaces = {
+					land: true,
+					water: false
+				};
+				this.flies = false;
+				this.predator = false;
+				break;
+
+			case 'lion':
+				this.hp = 150;
+				this.damage = 35;
+				this.size = {width: 2, height: 2};
+				this.color = '#995400';
+				// Used to define relationships with other animals
+				this.strength = 60;
+				this.speed = {
+					wandering: 1,
+					running: 2.5,
+				};
+				this.fov = 20;
+				this.surfaces = {
+					land: true,
+					water: false
+				};
+				this.flies = false;
+				this.predator = true;
+				break;
+		}
+	}
+}
+
+function setup() {
+	createCanvas(window.innerWidth, window.innerHeight);
+}
+
+function tick() {
+
+}
+
+let pixelSize = 50;
+
+function draw() {
+	noStroke();
+	for (let x = 0; x < map.length; x++) {
+		for (let y = 0; y < map[x].length; y++) {
+			console.log(`Reading map[${x}][${y}]`);
+			switch (map[x][y]) {
+				case 'sand':
+					fill(color('#fcdd76'));
+					break;
+				case 'grass':
+					fill(color('#5da130'));
+					break;
+				case 'deepWater':
+					fill(color('#0046b8'));
+					break;
+				case 'water':
+					fill(color('#1f75fe'));
+					break;
+				case 'shoreWater':
+					fill(color('#5294ff'));
+					break;
+			}
+			rect(y * pixelSize, x * pixelSize, pixelSize, pixelSize);
+		}
+	}
 }
