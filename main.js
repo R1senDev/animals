@@ -166,19 +166,25 @@ function generateWorld(type) {
 	map = [];
 	switch (type) {
 		case 'classic':
+			// Cleaning map
 			for (let e = 0; e < mapSize[1]; e++) {
 				map.push([]);
 			}
+
+			// Creating ocean
 			for (let y = 0; y < mapSize[1]; y++) {
 				for (let x = 0; x < mapSize[0]; x++) {
 					map[x][y] = 'deepWater';
 				}
 			}
 
+			// Planting island
 			let rPos = [Math.floor(Math.random() * mapSize[0]), Math.floor(Math.random() * mapSize[1])];
 			map[rPos[0]][rPos[1]] = 'grass';
 			let rSpr = 0;
 			let spawnPos = 0;
+
+			// Growing island up
 			while (rSpr < generatorProperties.islandSize) {
 				for (let y = 0; y < mapSize[1]; y++) {
 					for (let x = 0; x < mapSize[0]; x++) {
@@ -226,6 +232,15 @@ function generateWorld(type) {
 				}
 
 				rSpr = Math.random() * 101;
+			}
+
+			// Sand generation
+			for (let y = 0; y < mapSize[1]; y++) {
+				for (let x = 0; x < mapSize[0]; x++) {
+					if ((map[x][y] == 'grass' || map[x][y] == 'sand') && (map[x][y - 1] == 'deepWater' || map[x + 1][y] == 'deepWater' || map[x][y + 1] == 'deepWater' || map[x - 1][y] == 'deepWater')) {
+						map[x][y] = 'sand';
+					}
+				}
 			}
 
 			break;
