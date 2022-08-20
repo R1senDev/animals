@@ -1,81 +1,3 @@
-let gamepadAPI = {
-	controller: {},
-	connected: false,
-	connect: function(event) {
-		gamepadAPI.controller = event.gamepad;
-		gamepadAPI.connected = true;
-		console.log('Gamepad connected!\n' + gamepadAPI.controller);
-	},
-	disconnect: function(event) {
-		gamepadAPI.connected = false;
-		delete gamepadAPI.controller;
-		console.log('Gamepad disconnected');
-	},
-	update: function() {
-		// clear the buttons cache
-		gamepadAPI.buttonsCache = [];
-		// move the buttons status from the previous frame to the cache
-		for (let k = 0; k < gamepadAPI.buttonsStatus.length; k++) {
-			gamepadAPI.buttonsCache[k] = gamepadAPI.buttonsStatus[k];
-		}
-		// clear the buttons status
-		gamepadAPI.buttonsStatus = [];
-		// get the gamepad object
-		let c = gamepadAPI.controller || {};
-	
-		// loop through buttons and push the pressed ones to the array
-		let pressed = [];
-		if(c.buttons) {
-			for(let b = 0, t = c.buttons.length; b < t; b++) {
-				if(c.buttons[b].pressed) {
-					pressed.push(gamepadAPI.buttons[b]);
-				}
-			}
-		}
-		// loop through axes and push their values to the array
-		let axes = [];
-		if(c.axes) {
-			for(let a = 0, x = c.axes.length; a < x; a++) {
-				axes.push(c.axes[a].toFixed(2));
-			}
-		}
-		// assign received values
-		gamepadAPI.axesStatus = axes;
-		gamepadAPI.buttonsStatus = pressed;
-		// return buttons for debugging purposes
-		return pressed;
-	},
-	buttonPressed: function(button, hold) {
-		let newPress = false;
-		// loop through pressed buttons
-		for(let i = 0, s = gamepadAPI.buttonsStatus.length; i < s; i++) {
-			// if we found the button we're looking for...
-			if(gamepadAPI.buttonsStatus[i] == button) {
-				// set the boolean letiable to true
-				newPress = true;
-				// if we want to check the single press
-				if(!hold) {
-					// loop through the cached states from the previous frame
-					for(let j = 0, p = gamepadAPI.buttonsCache.length; j < p; j++) {
-						// if the button was already pressed, ignore new press
-						if(gamepadAPI.buttonsCache[j] == button) {
-							newPress = false;
-						}
-					}
-				}
-			}
-		}
-		return newPress;
-	},
-	buttons: ['DPad-Up', 'DPad-Down', 'DPad-Left', 'DPad-Right', 'Start', 'Back', 'Axis-Left', 'Axis-Right','LB', 'RB', 'Power', 'A', 'B', 'X', 'Y'],
-	buttonsCache: [],
-	buttonsStatus: [],
-	axesStatus: []
-};
-
-window.addEventListener('gamepadconnected', gamepadAPI.connect);
-window.addEventListener('gamepaddisconnected', gamepadAPI.disconnect);
-
 let kbKeysPressed = new Map();
 
 let map = [[]];
@@ -148,8 +70,9 @@ class Animal {
 }
 
 let pixelSize = 10;
-let mapSize = [40, 40];
+let mapSize = [80, 80];
 let generatorProperties = {
+	islandsCount: 3,
 	// This is not the actual size of the island, but a side
 	// setting of the generator, only indirectly affecting its
 	// size. Setting a value of 100 corresponds to a strict
@@ -160,6 +83,7 @@ let generatorProperties = {
 	// probability).
 	islandSize: 98,
 	minimumWaterPercent: 0.25,
+	sandLayers: 2,
 };
 
 function generateWorld(type) {
@@ -179,8 +103,11 @@ function generateWorld(type) {
 			}
 
 			// Planting island
-			let rPos = [Math.floor(Math.random() * mapSize[0]), Math.floor(Math.random() * mapSize[1])];
-			map[rPos[0]][rPos[1]] = 'grass';
+			for (let i = 0; i < generatorProperties.islandsCount; i++) {
+				let rPos = [Math.floor(Math.random() * mapSize[0]), Math.floor(Math.random() * mapSize[1])];
+				map[rPos[0]][rPos[1]] = 'grass';
+			}
+
 			let rSpr = 0;
 			let spawnPos = 0;
 
@@ -237,10 +164,33 @@ function generateWorld(type) {
 			// Sand generation
 			for (let y = 0; y < mapSize[1]; y++) {
 				for (let x = 0; x < mapSize[0]; x++) {
-					if ((map[x][y] == 'grass' || map[x][y] == 'sand') && (map[x][y - 1] == 'deepWater' || map[x + 1][y] == 'deepWater' || map[x][y + 1] == 'deepWater' || map[x - 1][y] == 'deepWater')) {
-						map[x][y] = 'sand';
+					try {
+						if ((map[x][y] == 'grass' || map[x][y] == 'sand') && (map[x][y - 1] == 'deepWater' || map[x + 1][y] == 'deepWater' || map[x][y + 1] == 'deepWater' || map[x - 1][y] == 'deepWater')) {
+							map[x][y] = 'sand';
+						}
+					} catch {}
+				}
+			}
+
+			while (let sl = 0; sl < generatorProperties.sandLayers - 1; sl++) {
+				for (let y = 0; y < mapSize[1]; y++) {
+					for (let x = 0; x < mapSize[0]; x++) {
+						if (map[x][y] == 'sand') {
+							for (let y1 = y - 1; y1 < y + 1; y1++) {
+								for (let x1 = x - 1; x1 < x + 1; x1++) {
+									if (map[x1][y1] == 'grass') {
+										map[x1][y1] = 'sand';
+									}
+								}
+							}
+						}
 					}
 				}
+			}
+
+			// Cropping
+			for (let y = 0; y < mapSize[1]; y++) {
+				map[y] = map[y].slice(0, mapSize[0]);
 			}
 
 			break;
