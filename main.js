@@ -2,75 +2,8 @@ let kbKeysPressed = new Map();
 
 let map = [[]];
 
-class Animal {
-	constructor(x, y, type) {
-		this.type = type;
-		switch (type) {
-			case 'wolf':
-				this.hp = 100;
-				this.damage = 25;
-				this.size = {width: 2, height: 2};
-				this.color = '#4d4d4d';
-				// Used to define relationships with other animals
-				this.strength = 50;
-				this.speed = {
-					wandering: 1,
-					running: 2,
-				};
-				this.fov = 20;
-				this.surfaces = {
-					land: true,
-					water: false
-				};
-				this.flies = false;
-				this.predator = true;
-				break;
-
-			case 'sheep':
-				this.hp = 100;
-				this.damage = 0;
-				this.size = {width: 2, height: 2};
-				this.color = '#ffffff';
-				// Used to define relationships with other animals
-				this.strength = 10;
-				this.speed = {
-					wandering: 1,
-					running: 1.5,
-				};
-				this.fov = 15;
-				this.surfaces = {
-					land: true,
-					water: false
-				};
-				this.flies = false;
-				this.predator = false;
-				break;
-
-			case 'lion':
-				this.hp = 150;
-				this.damage = 35;
-				this.size = {width: 2, height: 2};
-				this.color = '#995400';
-				// Used to define relationships with other animals
-				this.strength = 60;
-				this.speed = {
-					wandering: 1,
-					running: 2.5,
-				};
-				this.fov = 20;
-				this.surfaces = {
-					land: true,
-					water: false
-				};
-				this.flies = false;
-				this.predator = true;
-				break;
-		}
-	}
-}
-
-let pixelSize = 10;
-let mapSize = [80, 80];
+let pixelSize = 5;
+let mapSize = [100, 100];
 let generatorProperties = {
 	islandsCount: 3,
 	// This is not the actual size of the island, but a side
@@ -172,16 +105,18 @@ function generateWorld(type) {
 				}
 			}
 
-			while (let sl = 0; sl < generatorProperties.sandLayers - 1; sl++) {
+			for (let sl = 0; sl < generatorProperties.sandLayers - 1; sl++) {
 				for (let y = 0; y < mapSize[1]; y++) {
 					for (let x = 0; x < mapSize[0]; x++) {
 						if (map[x][y] == 'sand') {
 							for (let y1 = y - 1; y1 < y + 1; y1++) {
-								for (let x1 = x - 1; x1 < x + 1; x1++) {
-									if (map[x1][y1] == 'grass') {
-										map[x1][y1] = 'sand';
+								try {
+									for (let x1 = x - 1; x1 < x + 1; x1++) {
+										if (map[x1][y1] == 'grass') {
+											map[x1][y1] = 'sand';
+										}
 									}
-								}
+								} catch {}
 							}
 						}
 					}
@@ -204,10 +139,86 @@ function generateWorld(type) {
 	}
 }
 
+let __Animal__ = null;
 function setup() {
 	createCanvas(window.innerWidth, window.innerHeight);
 	generateWorld('classic');
+
+	__Animal__ = class Animal {
+		constructor(x, y, type) {
+		this.pos = createVector(x, y);
+		this.type = type;
+		switch (type) {
+			case 'wolf':
+				this.hp = 100;
+				this.damage = 25;
+				this.size = {width: 2, height: 2};
+				this.color = '#4d4d4d';
+				// Used to define relationships with other animals
+				this.strength = 50;
+				this.speed = {
+					wandering: 0.3,
+					running: 0.6,
+				};
+				this.fov = 20;
+				this.surfaces = {
+					land: true,
+					water: false
+				};
+				this.flies = false;
+				this.predator = true;
+				break;
+
+			case 'sheep':
+				this.hp = 100;
+				this.damage = 0;
+				this.size = {width: 2, height: 2};
+				this.color = '#ffffff';
+				// Used to define relationships with other animals
+				this.strength = 10;
+				this.speed = {
+					wandering: 1,
+					running: 1.5,
+				};
+				this.fov = 15;
+				this.surfaces = {
+					land: true,
+					water: false
+				};
+				this.flies = false;
+				this.predator = false;
+				break;
+
+			case 'lion':
+				this.hp = 150;
+				this.damage = 35;
+				this.size = {width: 2, height: 2};
+				this.color = '#995400';
+				// Used to define relationships with other animals
+				this.strength = 60;
+				this.speed = {
+					wandering: 1,
+					running: 2.5,
+				};
+				this.fov = 20;
+				this.surfaces = {
+					land: true,
+					water: false
+				};
+				this.flies = false;
+				this.predator = true;
+				break;
+			}
+		}
+	}
 }
+
+setTimeout(function() {
+	animals.push(new __Animal__(20, 20, 'sheep'));
+	animals.push(new __Animal__(35, 35, 'wolf'));
+	console.log(animals[0].pos);
+	console.log(animals[1].pos);
+}, 100);
 
 let fps = 0;
 let fps_ = 0;
@@ -215,7 +226,26 @@ let fps_ = 0;
 let ups = 0;
 let ups_ = 0;
 
+
+let animals = [];
+
 function tick() {
+	for (animal of animals) {
+		if (animal.predator) {
+			for (victim of animals) {
+				console.log(victim);
+				console.log(victim.pos);
+				if (Math.sqrt((victim.pos.x - animal.pos.x)^2 + (victim.pos.y - animal.pos.y)^2) < animal.fov) {
+					if (animal.strength < victim.strength) {
+						// Run away
+					} else {
+						animal.pos.add(p5.Vector.sub(victim.pos, animal.pos).limit(animal.speed.running))
+					}
+				}
+			}
+		}
+	}
+
 	ups_ += 1;
 }
 
@@ -282,5 +312,14 @@ function draw() {
 		}
 	}
 
+	for (animal of animals) {
+		fill(color(animal.color));
+		rect(animal.pos.y * pixelSize, animal.pos.y * pixelSize, pixelSize, pixelSize);
+	}
+
 	fps_ += 1;
 }
+
+// Notes:
+// Moving
+// hunter.pos.add(p5.Vector.sub(victim.pos, hunter.pos).limit(hunter.speed.running))
