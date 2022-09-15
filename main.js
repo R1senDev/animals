@@ -2,6 +2,10 @@ let kbKeysPressed = new Map();
 
 let map = [[]];
 
+let dev = {
+	lines: true,
+};
+
 let pixelSize = 5;
 let mapSize = [100, 100];
 let generatorProperties = {
@@ -139,75 +143,83 @@ function generateWorld(type) {
 	}
 }
 
+let nextID = 0;
+
 let __Animal__ = null;
 function setup() {
 	createCanvas(window.innerWidth, window.innerHeight);
 	generateWorld('classic');
+	frameRate(60);
 
 	__Animal__ = class Animal {
-		constructor(x, y, type) {
-		this.pos = createVector(x, y);
-		this.type = type;
-		switch (type) {
-			case 'wolf':
-				this.hp = 100;
-				this.damage = 25;
-				this.size = {width: 2, height: 2};
-				this.color = '#4d4d4d';
-				// Used to define relationships with other animals
-				this.strength = 50;
-				this.speed = {
-					wandering: 0.3,
-					running: 0.6,
-				};
-				this.fov = 20;
-				this.surfaces = {
-					land: true,
-					water: false
-				};
-				this.flies = false;
-				this.predator = true;
-				break;
-
-			case 'sheep':
-				this.hp = 100;
-				this.damage = 0;
-				this.size = {width: 2, height: 2};
-				this.color = '#ffffff';
-				// Used to define relationships with other animals
-				this.strength = 10;
-				this.speed = {
-					wandering: 1,
-					running: 1.5,
-				};
-				this.fov = 15;
-				this.surfaces = {
-					land: true,
-					water: false
-				};
-				this.flies = false;
-				this.predator = false;
-				break;
-
-			case 'lion':
-				this.hp = 150;
-				this.damage = 35;
-				this.size = {width: 2, height: 2};
-				this.color = '#995400';
-				// Used to define relationships with other animals
-				this.strength = 60;
-				this.speed = {
-					wandering: 1,
-					running: 2.5,
-				};
-				this.fov = 20;
-				this.surfaces = {
-					land: true,
-					water: false
-				};
-				this.flies = false;
-				this.predator = true;
-				break;
+		constructor(x, y, type, special={
+			tracking: false,
+		}) {
+			this.ID = nextID;
+			nextID++;
+			this.pos = createVector(x, y);
+			this.type = type;
+			this.special = special;
+			switch (type) {
+				case 'wolf':
+					this.hp = 100;
+					this.damage = 25;
+					this.size = {width: 2, height: 2};
+					this.color = '#4d4d4d';
+					// Used to define relationships with other animals
+					this.strength = 50;
+					this.speed = {
+						wandering: 0.15,
+						running: 0.3,
+					};
+					this.fov = 20;
+					this.surfaces = {
+						land: true,
+						water: false
+					};
+					this.flies = false;
+					this.predator = true;
+					break;
+	
+				case 'sheep':
+					this.hp = 100;
+					this.damage = 0;
+					this.size = {width: 2, height: 2};
+					this.color = '#ffffff';
+					// Used to define relationships with other animals
+					this.strength = 10;
+					this.speed = {
+						wandering: 0.5,
+						running: 0.75,
+					};
+					this.fov = 15;
+					this.surfaces = {
+						land: true,
+						water: false
+					};
+					this.flies = false;
+					this.predator = false;
+					break;
+	
+				case 'lion':
+					this.hp = 150;
+					this.damage = 35;
+					this.size = {width: 2, height: 2};
+					this.color = '#995400';
+					// Used to define relationships with other animals
+					this.strength = 60;
+					this.speed = {
+						wandering: 1,
+						running: 2.5,
+					};
+					this.fov = 20;
+					this.surfaces = {
+						land: true,
+						water: false
+					};
+					this.flies = false;
+					this.predator = true;
+					break;
 			}
 		}
 	}
@@ -216,9 +228,16 @@ function setup() {
 setTimeout(function() {
 	animals.push(new __Animal__(20, 20, 'sheep'));
 	animals.push(new __Animal__(35, 35, 'wolf'));
-	console.log(animals[0].pos);
-	console.log(animals[1].pos);
 }, 100);
+document.addEventListener('mousedown', function(event) {
+	console.log(`New wolf at ${event.clientX}:${event.clientY}`);
+	console.log(event.button);
+	if (event.button == 0) {
+		animals.push(new __Animal__(event.clientX / pixelSize, event.clientY / pixelSize, 'wolf'));
+	} else {
+		animals.push(new __Animal__(event.clientX / pixelSize, event.clientY / pixelSize, 'sheep'));
+	}
+});
 
 let fps = 0;
 let fps_ = 0;
@@ -233,23 +252,43 @@ function tick() {
 	for (animal of animals) {
 		if (animal.predator) {
 			for (victim of animals) {
-				console.log(victim);
-				console.log(victim.pos);
-				if (Math.sqrt((victim.pos.x - animal.pos.x)^2 + (victim.pos.y - animal.pos.y)^2) < animal.fov) {
-					if (animal.strength < victim.strength) {
-						// Run away
-					} else {
-						animal.pos.add(p5.Vector.sub(victim.pos, animal.pos).limit(animal.speed.running))
+				if (Math.pow(animal.pos.x - victim.pos.x, 2) + Math.pow(animal.pos.y - victim.pos.y, 2) <= Math.pow(animal.fov, 2)) {
+					if (animal.type != victim.type) {
+						if (animal.strength < victim.strength) {
+							animal.pos.add(p5.Vector.sub(animal.pos, victim.pos).limit(animal.speed.running));
+							//console.log(`Moved ${animal.type} from ${victim.type}`);
+						} else {
+							animal.pos.add(p5.Vector.sub(victim.pos, animal.pos).limit(animal.speed.running));
+							//console.log(`Moved ${animal.type} to ${victim.type}`);
+						}
 					}
 				}
 			}
+		} else {
+			for (hunter of animals) {
+				if (animal.pos.x == hunter.pos.x && animal.pos.y == hunter.pos.y && hunter.predator) {
+					animal.pos.x = Infinity;
+					console.log(`Annihilated ${animal.type}#${animal.ID}`);
+				}
+				if (Math.pow(animal.pos.x - hunter.pos.x, 2) + Math.pow(animal.pos.y - hunter.pos.y, 2) <= Math.pow(animal.fov, 2) && hunter.predator) {
+					animal.pos.add(p5.Vector.sub(animal.pos, hunter.pos).limit(animal.speed.running));
+					//console.log(`Moved ${animal.type} from ${hunter.type}`);
+				}
+			}
 		}
+
+		if (animal.pos.x < 0) animal.pos.x = 0;
+		if (animal.pos.y < 0) animal.pos.y = 0;
+		if (animal.pos.x + pixelSize > mapSize[0]) animal.pos.x = animal.pos.x + pixelSize;
+		if (animal.pos.y + pixelSize > mapSize[1]) animal.pos.y = animal.pos.y + pixelSize;
+		
+		if (animal.special.tracking) console.log(`${animal.type}:\n\t${animal.pos.x}:${animal.pos.y}`);
 	}
 
 	ups_ += 1;
 }
 
-setInterval(tick, 10);
+setInterval(tick, 5);
 setInterval(function() {
 	ups = ups_;
 	ups_ = 0;
@@ -314,12 +353,8 @@ function draw() {
 
 	for (animal of animals) {
 		fill(color(animal.color));
-		rect(animal.pos.y * pixelSize, animal.pos.y * pixelSize, pixelSize, pixelSize);
+		rect(animal.pos.x * pixelSize, animal.pos.y * pixelSize, pixelSize, pixelSize);
 	}
 
 	fps_ += 1;
 }
-
-// Notes:
-// Moving
-// hunter.pos.add(p5.Vector.sub(victim.pos, hunter.pos).limit(hunter.speed.running))
