@@ -4,10 +4,12 @@ let map = [[]];
 
 let dev = {
 	lines: true,
+	fpsLimit: 30,
 };
 
 let pixelSize = 5;
 let mapSize = [100, 100];
+
 let generatorProperties = {
 	islandsCount: 3,
 	// This is not the actual size of the island, but a side
@@ -21,6 +23,10 @@ let generatorProperties = {
 	islandSize: 98,
 	minimumWaterPercent: 0.25,
 	sandLayers: 2,
+};
+
+let simulation = {
+	eatingDistance: 2,
 };
 
 function generateWorld(type) {
@@ -149,7 +155,6 @@ let __Animal__ = null;
 function setup() {
 	createCanvas(window.innerWidth, window.innerHeight);
 	generateWorld('classic');
-	frameRate(60);
 
 	__Animal__ = class Animal {
 		constructor(x, y, type, special={
@@ -221,6 +226,19 @@ function setup() {
 					this.predator = true;
 					break;
 			}
+			this.isRunning = false;
+			this.wanderingInterval = setInterval(this.startWandering, 5000);
+		}
+		annihilate() {
+			this.pos.x = Infinity;
+			clearInterval(this.wanderingInterval);
+		}
+		startWandering() {
+			if (!this.isRunning) {
+				this.wanderingDir = createVector(Math.random() * 10 - 5, Math.random() * 10 - 5);
+				this.wi = setInterval(function() {this.pos.add(this.wanderingDir)}, 10);
+				this.wdt = setTimeout(function() {clearInterval(this.wi)}, 5000);
+			}
 		}
 	}
 }
@@ -230,8 +248,6 @@ setTimeout(function() {
 	animals.push(new __Animal__(35, 35, 'wolf'));
 }, 100);
 document.addEventListener('mousedown', function(event) {
-	console.log(`New wolf at ${event.clientX}:${event.clientY}`);
-	console.log(event.button);
 	if (event.button == 0) {
 		animals.push(new __Animal__(event.clientX / pixelSize, event.clientY / pixelSize, 'wolf'));
 	} else {
@@ -245,10 +261,14 @@ let fps_ = 0;
 let ups = 0;
 let ups_ = 0;
 
+function apprEq(val1, val2, dist) {
+	return +(val1 - val2) <= dist;
+}
 
 let animals = [];
 
 function tick() {
+	frameRate(0);
 	for (animal of animals) {
 		if (animal.predator) {
 			for (victim of animals) {
@@ -256,9 +276,11 @@ function tick() {
 					if (animal.type != victim.type) {
 						if (animal.strength < victim.strength) {
 							animal.pos.add(p5.Vector.sub(animal.pos, victim.pos).limit(animal.speed.running));
+							animal.isRunning = true;
 							//console.log(`Moved ${animal.type} from ${victim.type}`);
 						} else {
 							animal.pos.add(p5.Vector.sub(victim.pos, animal.pos).limit(animal.speed.running));
+							animal.isRunning = true;
 							//console.log(`Moved ${animal.type} to ${victim.type}`);
 						}
 					}
@@ -266,25 +288,29 @@ function tick() {
 			}
 		} else {
 			for (hunter of animals) {
-				if (animal.pos.x == hunter.pos.x && animal.pos.y == hunter.pos.y && hunter.predator) {
-					animal.pos.x = Infinity;
+				if (Math.sqrt(Math.pow(animal.pos.x - hunter.pos.x, 2) + Math.pow(animal.pos.y - hunter.pos.y, 2)) <= simulation.eatingDistance && hunter.predator) {
+					animal.annihilate();
 					console.log(`Annihilated ${animal.type}#${animal.ID}`);
 				}
 				if (Math.pow(animal.pos.x - hunter.pos.x, 2) + Math.pow(animal.pos.y - hunter.pos.y, 2) <= Math.pow(animal.fov, 2) && hunter.predator) {
 					animal.pos.add(p5.Vector.sub(animal.pos, hunter.pos).limit(animal.speed.running));
+					animal.isRunning = true;
 					//console.log(`Moved ${animal.type} from ${hunter.type}`);
+				} else {
+					animal.isRunning = false;
 				}
 			}
 		}
 
 		if (animal.pos.x < 0) animal.pos.x = 0;
 		if (animal.pos.y < 0) animal.pos.y = 0;
-		if (animal.pos.x + pixelSize > mapSize[0]) animal.pos.x = animal.pos.x + pixelSize;
-		if (animal.pos.y + pixelSize > mapSize[1]) animal.pos.y = animal.pos.y + pixelSize;
+		if (animal.pos.x > mapSize[0]) animal.pos.x = mapSize[0] - 1.5;
+		if (animal.pos.y > mapSize[1]) animal.pos.y = mapSize[1] - 1.5;
 		
 		if (animal.special.tracking) console.log(`${animal.type}:\n\t${animal.pos.x}:${animal.pos.y}`);
 	}
 
+	frameRate(dev.fpsLimit);
 	ups_ += 1;
 }
 
