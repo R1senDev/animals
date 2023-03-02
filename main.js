@@ -235,9 +235,11 @@ function setup() {
 		}
 		startWandering() {
 			if (!this.isRunning) {
+				cachedThis = this
 				this.wanderingDir = createVector(Math.random() * 10 - 5, Math.random() * 10 - 5);
-				this.wi = setInterval(function() {this.pos.add(this.wanderingDir)}, 10);
-				this.wdt = setTimeout(function() {clearInterval(this.wi)}, 5000);
+				this.wi = setInterval(function() {cachedThis.os.add(this.wanderingDir)}, 10);
+				this.wdt = setTimeout(function() {clearInterval(cachedThis.wi)}, 5000);
+				this = cachedThis
 			}
 		}
 	}
@@ -249,9 +251,13 @@ setTimeout(function() {
 }, 100);
 document.addEventListener('mousedown', function(event) {
 	if (event.button == 0) {
-		animals.push(new __Animal__(event.clientX / pixelSize, event.clientY / pixelSize, 'wolf'));
+		if (map[event.clientX / pixelSize][event.clientY / pixelSize] != 'water' && map[event.clientX / pixelSize][event.clientY / pixelSize] != 'deepWater' && map[event.clientX / pixelSize][event.clientY / pixelSize] != 'shoreWater') {
+			animals.push(new __Animal__(event.clientX / pixelSize, event.clientY / pixelSize, 'wolf'));
+		}
 	} else {
-		animals.push(new __Animal__(event.clientX / pixelSize, event.clientY / pixelSize, 'sheep'));
+		if (map[event.clientX / pixelSize][event.clientY / pixelSize] != 'water' && map[event.clientX / pixelSize][event.clientY / pixelSize] != 'deepWater' && map[event.clientX / pixelSize][event.clientY / pixelSize] != 'shoreWater') {
+			animals.push(new __Animal__(event.clientX / pixelSize, event.clientY / pixelSize, 'sheep'));
+		}
 	}
 });
 
