@@ -237,7 +237,7 @@ function setup() {
 			if (!this.isRunning) {
 				cachedThis = this
 				this.wanderingDir = createVector(Math.random() * 10 - 5, Math.random() * 10 - 5);
-				this.wi = setInterval(function() {cachedThis.os.add(this.wanderingDir)}, 10);
+				this.wi = setInterval(function() {cachedThis.pos.add(this.wanderingDir)}, 10);
 				this.wdt = setTimeout(function() {clearInterval(cachedThis.wi)}, 5000);
 				this = cachedThis
 			}
