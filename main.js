@@ -248,11 +248,10 @@ function setup() {
         }
         startWandering() {
             if (!this.isRunning) {
-                var cachedThis = this;
-                this.wanderingDir = createVector(Math.random() * 10 - 5, Math.random() * 10 - 5);
+                let cachedThis = this;
+                cachedThis.wanderingDir = createVector(Math.random() * 10 - 5, Math.random() * 10 - 5);
                 cachedThis.wi = setInterval(function() {
-                    var pos = cachedThis.pos;
-                    pos.add(cachedThis.wanderingDir);
+                    cachedThis.pos.add(cachedThis.wanderingDir);
                 }, 10);
                 this.wdt = setTimeout(function() {
                     clearInterval(cachedThis.wi);
