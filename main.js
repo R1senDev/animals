@@ -239,7 +239,8 @@ function setup() {
                     break;
             }
             this.isRunning = false;
-            this.wanderingInterval = setInterval(this.startWandering, 5000);
+            this.wanderingInterval = setInterval(() => this.startWandering(), 5000);
+
         }
         annihilate() {
             this.pos.x = Infinity;
@@ -247,15 +248,14 @@ function setup() {
         }
         startWandering() {
             if (!this.isRunning) {
-                cachedThis = this
-                this.wanderingDir = createVector(Math.random() * 10 - 5, Math.random() * 10 - 5);
-                this.wi = setInterval(function() {
-                    cachedThis.pos.add(this.wanderingDir)
+                let cachedThis = this;
+                cachedThis.wanderingDir = createVector(Math.random() * 10 - 5, Math.random() * 10 - 5);
+                cachedThis.wi = setInterval(function() {
+                    cachedThis.pos.add(cachedThis.wanderingDir);
                 }, 10);
                 this.wdt = setTimeout(function() {
-                    clearInterval(cachedThis.wi)
+                    clearInterval(cachedThis.wi);
                 }, 5000);
-                this = cachedThis
             }
         }
     }
@@ -265,15 +265,21 @@ setTimeout(function() {
     animals.push(new __Animal__(20, 20, 'sheep'));
     animals.push(new __Animal__(35, 35, 'wolf'));
 }, 100);
+
 document.addEventListener('mousedown', function(event) {
     let animal = '';
-    if (map[event.clientX / pixelSize][event.clientY / pixelSize] != 'water' && map[event.clientX / pixelSize][event.clientY / pixelSize] != 'deepWater' && map[event.clientX / pixelSize][event.clientY / pixelSize] != 'shoreWater') {
-        if (event.button == 0) {
-            animal = 'wolf';
-        } else {
-            animal = 'sheep';
+    let xIndex = Math.floor(event.clientX / pixelSize);
+    let yIndex = Math.floor(event.clientY / pixelSize);
+    // Add a check to ensure that the calculated indices are within the bounds of the map array.
+    if (xIndex >= 0 && xIndex < mapSize[0] && yIndex >= 0 && yIndex < mapSize[1]) {
+        if (map[xIndex][yIndex] != 'water' && map[xIndex][yIndex] != 'deepWater' && map[xIndex][yIndex] != 'shoreWater') {
+            if (event.button == 0) {
+                animal = 'wolf';
+            } else {
+                animal = 'sheep';
+            }
+            animals.push(new __Animal__(xIndex, yIndex, animal));
         }
-        animals.push(new __Animal__(event.clientX / pixelSize, event.clientY / pixelSize, animal));
     }
 });
 
