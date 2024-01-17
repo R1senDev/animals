@@ -243,8 +243,9 @@ function setup() {
 
         }
         annihilate() {
-            this.pos.x = Infinity;
             clearInterval(this.wanderingInterval);
+            animals = animals.filter(animal => animal.ID != this.ID);
+            delete this;
         }
         startWandering() {
             if (!this.isRunning) {
