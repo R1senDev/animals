@@ -43,45 +43,45 @@ function generateWorld(type) {
             // Creating ocean
             for (let y = 0; y < mapSize[1]; y++) {
                 for (let x = 0; x < mapSize[0]; x++) {
-                    map[x][y] = 'deepWater';
+                    map[y][x] = 'grass';
                 }
             }
 
             // Planting island
             for (let i = 0; i < generatorProperties.islandsCount; i++) {
-                let rPos = [Math.floor(Math.random() * mapSize[0]), Math.floor(Math.random() * mapSize[1])];
-                map[rPos[0]][rPos[1]] = 'grass';
+                let randomPos = [Math.floor(Math.random() * mapSize[0]), Math.floor(Math.random() * mapSize[1])];
+                map[randomPos[1]][randomPos[0]] = 'grass';
             }
 
-            let rSpr = 0;
+            let spread_latch = 0;
             let spawnPos = 0;
 
             // Growing island up
-            while (rSpr < generatorProperties.islandSize) {
+            while (spread_latch < generatorProperties.islandSize) {
                 for (let y = 0; y < mapSize[1]; y++) {
                     for (let x = 0; x < mapSize[0]; x++) {
-                        if (map[x][y] == 'grass') {
+                        if (map[y][x] == 'grass') {
                             spawnPos = Math.floor(Math.random() * 4);
                             switch (spawnPos) {
                                 case 0:
                                     try {
-                                        map[x][y - 1] = 'grass';
-                                    } catch {}
+                                        map[y][x - 1] = 'grass';
+                                    } catch { }
                                     break;
                                 case 1:
                                     try {
-                                        map[x + 1][y] = 'grass';
-                                    } catch {}
+                                        map[y + 1][x] = 'grass';
+                                    } catch { }
                                     break;
                                 case 2:
                                     try {
-                                        map[x][y + 1] = 'grass';
-                                    } catch {}
+                                        map[y][x + 1] = 'grass';
+                                    } catch { }
                                     break;
                                 case 3:
                                     try {
-                                        map[x - 1][y] = 'grass';
-                                    } catch {}
+                                        map[y - 1][x] = 'grass';
+                                    } catch { }
                                     break;
                             }
                         }
@@ -92,7 +92,7 @@ function generateWorld(type) {
                 let tilesCount = [0, 0];
                 for (let y = 0; y < mapSize[1]; y++) {
                     for (let x = 0; x < mapSize[0]; x++) {
-                        if (map[x][y] == 'grass') {
+                        if (map[y][x] == 'grass') {
                             tilesCount[1] += 1;
                         } else {
                             tilesCount[0] += 1;
@@ -103,32 +103,32 @@ function generateWorld(type) {
                     break;
                 }
 
-                rSpr = Math.random() * 101;
+                spread_latch = Math.random() * 101;
             }
 
             // Sand generation
             for (let y = 0; y < mapSize[1]; y++) {
                 for (let x = 0; x < mapSize[0]; x++) {
                     try {
-                        if ((map[x][y] == 'grass' || map[x][y] == 'sand') && (map[x][y - 1] == 'deepWater' || map[x + 1][y] == 'deepWater' || map[x][y + 1] == 'deepWater' || map[x - 1][y] == 'deepWater')) {
-                            map[x][y] = 'sand';
+                        if ((map[y][x] == 'grass' || map[y][x] == 'sand') && (map[y][x - 1] == 'deepWater' || map[y + 1][x] == 'deepWater' || map[y][x + 1] == 'deepWater' || map[y - 1][x] == 'deepWater')) {
+                            map[y][x] = 'sand';
                         }
-                    } catch {}
+                    } catch { }
                 }
             }
 
-            for (let sl = 0; sl < generatorProperties.sandLayers - 1; sl++) {
+            for (let generated_layers = 0; generated_layers < generatorProperties.sandLayers - 1; generated_layers++) {
                 for (let y = 0; y < mapSize[1]; y++) {
                     for (let x = 0; x < mapSize[0]; x++) {
-                        if (map[x][y] == 'sand') {
+                        if (map[y][x] == 'sand') {
                             for (let y1 = y - 1; y1 < y + 1; y1++) {
                                 try {
                                     for (let x1 = x - 1; x1 < x + 1; x1++) {
-                                        if (map[x1][y1] == 'grass') {
-                                            map[x1][y1] = 'sand';
+                                        if (map[y1][x1] == 'grass') {
+                                            map[y1][x1] = 'sand';
                                         }
                                     }
-                                } catch {}
+                                } catch { }
                             }
                         }
                     }
@@ -168,6 +168,7 @@ function setup() {
             this.pos = createVector(x, y);
             this.type = type;
             this.special = special;
+            this.target = null;
             switch (type) {
                 case 'wolf':
                     this.hp = 100;
@@ -180,7 +181,7 @@ function setup() {
                     // Used to define relationships with other animals
                     this.strength = 50;
                     this.speed = {
-                        wandering: 0.15,
+                        wandering: 0.1,
                         running: 0.3,
                     };
                     this.fov = 20;
@@ -203,8 +204,8 @@ function setup() {
                     // Used to define relationships with other animals
                     this.strength = 10;
                     this.speed = {
-                        wandering: 0.5,
-                        running: 0.75,
+                        wandering: 0.1,
+                        running: 0.4,
                     };
                     this.fov = 15;
                     this.surfaces = {
@@ -239,7 +240,7 @@ function setup() {
                     break;
             }
             this.isRunning = false;
-            this.wanderingInterval = setInterval(() => this.startWandering(), 5000);
+            // this.wanderingInterval = setInterval(() => this.startWandering(), 5000);
 
         }
         annihilate() {
@@ -264,31 +265,34 @@ function setup() {
 
 setTimeout(function() {
     animals.push(new __Animal__(20, 20, 'sheep'));
-    animals.push(new __Animal__(35, 35, 'wolf'));
+    // animals.push(new __Animal__(35, 35, 'wolf'));
 }, 100);
 
 document.addEventListener('mousedown', function(event) {
     let animal = '';
-    let xIndex = Math.floor(event.clientX / pixelSize);
-    let yIndex = Math.floor(event.clientY / pixelSize);
+    let target = {
+        x: Math.floor(event.pageX / pixelSize),
+        y: Math.floor(event.pageY / pixelSize)
+    }
+
     // Add a check to ensure that the calculated indices are within the bounds of the map array.
-    if (xIndex >= 0 && xIndex < mapSize[0] && yIndex >= 0 && yIndex < mapSize[1]) {
-        if (map[xIndex][yIndex] != 'water' && map[xIndex][yIndex] != 'deepWater' && map[xIndex][yIndex] != 'shoreWater') {
+    if (target.x >= 0 && target.x < mapSize[0] && target.y >= 0 && target.y < mapSize[1]) {
+        if (map[target.y][target.x] != 'water' && map[target.y][target.x] != 'deepWater' && map[target.y][target.x] != 'shoreWater') {
             if (event.button == 0) {
                 animal = 'wolf';
             } else {
                 animal = 'sheep';
             }
-            animals.push(new __Animal__(xIndex, yIndex, animal));
+            animals.push(new __Animal__(target.x, target.y, animal));
         }
     }
 });
 
 let fps = 0;
-let fps_ = 0;
+let fpls = 0;
 
 let ups = 0;
-let ups_ = 0;
+let upls = 0;
 
 function apprEq(val1, val2, dist) {
     return +(val1 - val2) <= dist;
@@ -298,37 +302,57 @@ let animals = [];
 
 function tick() {
     frameRate(0);
-    for (animal of animals) {
+    for (let animal of animals) {
         if (animal.predator) {
-            for (victim of animals) {
+            let vector = createVector(0, 0);
+            let targets = []
+
+            for (let victim of animals) {
                 if (Math.pow(animal.pos.x - victim.pos.x, 2) + Math.pow(animal.pos.y - victim.pos.y, 2) <= Math.pow(animal.fov, 2)) {
                     if (animal.type != victim.type) {
+                        animal.isRunning = true;
                         if (animal.strength < victim.strength) {
-                            animal.pos.add(p5.Vector.sub(animal.pos, victim.pos).limit(animal.speed.running));
-                            animal.isRunning = true;
-                            //console.log(`Moved ${animal.type} from ${victim.type}`);
+                            vector.add(p5.Vector.sub(animal.pos, victim.pos));
+                            targets.push(p5.Vector.sub(animal.pos, victim.pos));
+
+                            break;
+                            // console.log(`Moved ${animal.type} from ${victim.type}`);
                         } else {
-                            animal.pos.add(p5.Vector.sub(victim.pos, animal.pos).limit(animal.speed.running));
-                            animal.isRunning = true;
-                            //console.log(`Moved ${animal.type} to ${victim.type}`);
+                            vector.add(p5.Vector.sub(victim.pos, animal.pos));
+                            // console.log(`Moved ${animal.type} to ${victim.type}`);
                         }
                     }
                 }
             }
+
+            targets.sort((a, b) => a.mag() - b.mag());
+            if (targets.length) {
+                animal.target = targets[0];
+                animal.pos.add(animal.target.add((Math.random() * 2 - 1) * (animal.target != null), (Math.random() * 2 - 1) * (animal.target != null)).limit(animal.speed.running));
+            } else {
+                animal.target = null;
+            }
         } else {
-            for (hunter of animals) {
+            let vector = createVector(0, 0);
+
+            for (let hunter of animals) {
                 if (Math.sqrt(Math.pow(animal.pos.x - hunter.pos.x, 2) + Math.pow(animal.pos.y - hunter.pos.y, 2)) <= simulation.eatingDistance && hunter.predator) {
                     animal.annihilate();
                     console.log(`Annihilated ${animal.type}#${animal.ID}`);
                 }
+            }
+
+            for (let hunter of animals) {
                 if (Math.pow(animal.pos.x - hunter.pos.x, 2) + Math.pow(animal.pos.y - hunter.pos.y, 2) <= Math.pow(animal.fov, 2) && hunter.predator) {
-                    animal.pos.add(p5.Vector.sub(animal.pos, hunter.pos).limit(animal.speed.running));
+                    vector.add(p5.Vector.sub(animal.pos, hunter.pos));
                     animal.isRunning = true;
-                    //console.log(`Moved ${animal.type} from ${hunter.type}`);
+                    // console.log(`Moved ${animal.type} from ${hunter.type}`);
                 } else {
                     animal.isRunning = false;
                 }
             }
+
+            animal.pos.add(vector.limit(animal.speed.running));
         }
 
         if (animal.pos.x < 0) animal.pos.x = 0;
@@ -340,16 +364,17 @@ function tick() {
     }
 
     frameRate(dev.fpsLimit);
-    ups_ += 1;
+    upls += 1;
 }
 
+// Tick speed placed here
 setInterval(tick, 5);
 setInterval(function() {
-    ups = ups_;
-    ups_ = 0;
+    ups = upls;
+    upls = 0;
 
-    fps = fps_;
-    fps_ = 0;
+    fps = fpls;
+    fpls = 0;
 
     console.log(`FPS: ${fps} | UPS: ${ups}`);
 }, 1000);
@@ -357,9 +382,9 @@ setInterval(function() {
 function draw() {
     noStroke();
 
-    for (let x = 0; x < map.length; x++) {
-        for (let y = 0; y < map[x].length; y++) {
-            switch (map[x][y]) {
+    for (let y = 0; y < map.length; y++) {
+        for (let x = 0; x < map[y].length; x++) {
+            switch (map[y][x]) {
                 case 'sand':
                     fill(color('#fcdd76'));
                     break;
@@ -402,14 +427,15 @@ function draw() {
                     fill(color('#293133'));
                     break;
             }
-            rect(y * pixelSize, x * pixelSize, pixelSize, pixelSize);
+            // FLAG
+            rect(x * pixelSize, y * pixelSize, pixelSize, pixelSize);
         }
     }
 
-    for (animal of animals) {
+    for (let animal of animals) {
         fill(color(animal.color));
         rect(animal.pos.x * pixelSize, animal.pos.y * pixelSize, pixelSize, pixelSize);
     }
 
-    fps_ += 1;
+    fpls += 1;
 }
