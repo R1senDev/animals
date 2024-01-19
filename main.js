@@ -149,7 +149,7 @@ function generateWorld(type) {
             for (let y = 0; y < mapSize[1]; y++) {
                 for (let x = 0; x < mapSize[0]; x++) {
                     try {
-                        if ((map[y][x] == 'grass' || map[y][x] == 'sand') && (map[y][x - 1] == 'deepWater' || map[y + 1][x] == 'deepWater' || map[y][x + 1] == 'deepWater' || map[y - 1][x] == 'deepWater')) {
+                        if ((map[y][x] == 'grass' || map[y][x] == 'sand') && isTileNearby(x, y, 'deepWater')) {
                             map[y][x] = 'sand';
                         }
                     } catch {}
@@ -304,8 +304,10 @@ function setup() {
 
         }
         annihilate() {
-            this.pos.x = Infinity;
             clearInterval(this.wanderingInterval);
+            animals = animals.filter(animal => animal.ID != this.ID);
+            delete this;
+
         }
         startWandering() {
             if (!this.isRunning) {
@@ -334,7 +336,7 @@ document.addEventListener('mousedown', function(event) {
         y: Math.floor(event.pageY / pixelSize)
     }
 
-    // Add a check to ensure that the calculated indices are within the bounds of the map array.
+    // Add a check to ensure that the calculated indices are within the bounds of the map array
     if (target.x >= 0 && target.x < mapSize[0] && target.y >= 0 && target.y < mapSize[1]) {
         if (map[target.y][target.x] != 'water' && map[target.y][target.x] != 'deepWater' && map[target.y][target.x] != 'shoreWater') {
             if (event.button == 0) {
@@ -388,9 +390,8 @@ function tick() {
             if (targets.length) {
                 animal.target = targets[0];
                 animal.pos.add(animal.target.add((Math.random() * 2 - 1) * (animal.target != null), (Math.random() * 2 - 1) * (animal.target != null)).limit(animal.speed.running));
-            } else {
-                animal.target = null;
-            }
+            } else animal.target = null;
+
         } else {
             let vector = createVector(0, 0);
 
@@ -419,7 +420,7 @@ function tick() {
         if (animal.pos.x > mapSize[0]) animal.pos.x = mapSize[0] - 1.5;
         if (animal.pos.y > mapSize[1]) animal.pos.y = mapSize[1] - 1.5;
 
-        if (animal.special.tracking) console.log(`${animal.type}:\n\t${animal.pos.x}:${animal.pos.y}`);
+        if (animal.special.tracking) console.log(`${animal.type}#${animal.ID}\t${animal.pos.x}:${animal.pos.y}`);
     }
 
     frameRate(dev.fpsLimit);
