@@ -28,7 +28,7 @@ const generatorProperties = {
     sandLayers: 3,
 };
 
-let simulation = {
+const simulation = {
     eatingDistance: 2,
 };
 
@@ -53,60 +53,65 @@ function generateWorld(type) {
                 let randomPos = [Math.floor(Math.random() * mapSize[0]), Math.floor(Math.random() * mapSize[1])];
                 map[randomPos[1]][randomPos[0]] = 'grass';
             }
-
-            let spreadLatch = 0;
-            let spawnPos = 0;
-
+            
             // Growing island up
             let enoughSolidTiles = false;
+            let spreadLatch = 0;
+            let spawnPos = 0;
 
             while (spreadLatch < generatorProperties.islandSize || !enoughSolidTiles) {
                 for (let y = 0; y < mapSize[1]; y++) {
                     for (let x = 0; x < mapSize[0]; x++) {
+
                         if (map[y][x] == 'grass') {
                             spawnPos = Math.floor(Math.random() * 4);
+
                             switch (spawnPos) {
+
                                 case 0:
                                     try {
                                         map[y][x - 1] = 'grass';
-                                    } catch { }
+                                    } catch {}
                                     break;
+
+
                                 case 1:
                                     try {
                                         map[y + 1][x] = 'grass';
-                                    } catch { }
+                                    } catch {}
                                     break;
+
                                 case 2:
                                     try {
                                         map[y][x + 1] = 'grass';
-                                    } catch { }
+                                    } catch {}
                                     break;
+
                                 case 3:
                                     try {
                                         map[y - 1][x] = 'grass';
-                                    } catch { }
+                                    } catch {}
+
                                     break;
                             }
                         }
                     }
                 }
 
+                // Counting tiles' types
                 // [water, land]
                 let tilesCount = [0, 0];
                 for (let y = 0; y < mapSize[1]; y++) {
                     for (let x = 0; x < mapSize[0]; x++) {
-                        if (map[y][x] == 'grass') {
-                            tilesCount[1] += 1;
-                        } else {
-                            tilesCount[0] += 1;
-                        }
+                        if (map[y][x] == 'grass') tilesCount[1] += 1;
+                        else tilesCount[0] += 1;
                     }
                 }
 
                 if (tilesCount[0] / tilesCount[1] <= generatorProperties.minimumWaterPercent) break;
                 
                 spreadLatch = Math.random() * 101;
-                console.log(`Generator says: current map props: ${tilesCount} (${(tilesCount[1] / tilesCount[0]) * 100}% solid)`);
+                console.log(`Generator says: current map props: ${tilesCount} (${(tilesCount[1] / (mapSize[0] * mapSize[1]) * 100).toFixed(2)}% solid)`);
                 
                 if (tilesCount[1] < generatorProperties.minimumSolidTiles) {
                     if (spreadLatch < generatorProperties.islandSize) console.log('Generator says: not enough tiles, adding iterations');
@@ -121,7 +126,7 @@ function generateWorld(type) {
                         if ((map[y][x] == 'grass' || map[y][x] == 'sand') && (map[y][x - 1] == 'deepWater' || map[y + 1][x] == 'deepWater' || map[y][x + 1] == 'deepWater' || map[y - 1][x] == 'deepWater')) {
                             map[y][x] = 'sand';
                         }
-                    } catch { }
+                    } catch {}
                 }
             }
 
@@ -136,7 +141,7 @@ function generateWorld(type) {
                                             map[y1][x1] = 'sand';
                                         }
                                     }
-                                } catch { }
+                                } catch {}
                             }
                         }
                     }
