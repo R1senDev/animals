@@ -4,15 +4,15 @@ let map = [
     []
 ];
 
-let dev = {
+const dev = {
     lines: true,
     fpsLimit: 30,
 };
 
-let pixelSize = 5;
-let mapSize = [100, 100];
+const pixelSize = 5;
+const mapSize = [100, 100];
 
-let generatorProperties = {
+const generatorProperties = {
     islandsCount: 3,
     // This is not the actual size of the island, but a side
     // setting of the generator, only indirectly affecting its
@@ -22,9 +22,10 @@ let generatorProperties = {
     // value of 99 does not guarantee that the island
     // consist of two or three cells (albeit with a small
     // probability).
-    islandSize: 98,
+    islandSize: 99,
     minimumWaterPercent: 0.25,
-    sandLayers: 2,
+    minimumSolidTiles: 75,
+    sandLayers: 3,
 };
 
 let simulation = {
@@ -57,7 +58,9 @@ function generateWorld(type) {
             let spawnPos = 0;
 
             // Growing island up
-            while (rSpr < generatorProperties.islandSize) {
+            let enoughSolidTiles = false;
+
+            while (rSpr < generatorProperties.islandSize || !enoughSolidTiles) {
                 for (let y = 0; y < mapSize[1]; y++) {
                     for (let x = 0; x < mapSize[0]; x++) {
                         if (map[x][y] == 'grass') {
@@ -99,11 +102,16 @@ function generateWorld(type) {
                         }
                     }
                 }
-                if (tilesCount[0] / tilesCount[1] <= generatorProperties.minimumWaterPercent) {
-                    break;
-                }
 
+                if (tilesCount[0] / tilesCount[1] <= generatorProperties.minimumWaterPercent) break;
+                
                 rSpr = Math.random() * 101;
+                console.log(`Generator says: current map props: ${tilesCount} (${(tilesCount[1] / tilesCount[0]) * 100}% solid)`);
+                
+                if (tilesCount[1] < generatorProperties.minimumSolidTiles) {
+                    if (rSpr < generatorProperties.islandSize) console.log('Generator says: not enough tiles, adding iterations');
+                    enoughSolidTiles = false;
+                } else enoughSolidTiles = true;
             }
 
             // Sand generation
@@ -351,7 +359,7 @@ setInterval(function() {
     fps = fps_;
     fps_ = 0;
 
-    console.log(`FPS: ${fps} | UPS: ${ups}`);
+    // console.log(`FPS: ${fps} | UPS: ${ups}`);
 }, 1000);
 
 function draw() {
