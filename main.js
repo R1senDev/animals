@@ -25,12 +25,38 @@ const generatorProperties = {
     islandSize: 99,
     minimumWaterPercent: 0.25,
     minimumSolidTiles: 75,
-    sandLayers: 3,
+    sandLayers: 2,
+    shoreWaterLayers: 2,
+    waterLayers: 2,
 };
 
 const simulation = {
     eatingDistance: 2,
 };
+
+
+function isTileNearby(x, y, type) {
+    for (let ix = x - 1; ix < x + 2; ix++) {
+        for (let iy = y - 1; iy < y + 2; iy++) {
+            try {
+                if (ix != x && iy != y && map[iy][ix] == type) {
+                    return true;
+                }
+            } catch {}
+        }
+    }
+    return false;
+}
+
+
+function replaceEvery(origin, target) {
+    for (let y = 0; y < mapSize[1]; y++) {
+        for (let x = 0; x < mapSize[0]; x++) {
+            if (map[y][x] == origin) map[y][x] = target;
+        }
+    }
+}
+
 
 function generateWorld(type) {
     map = [];
@@ -148,6 +174,29 @@ function generateWorld(type) {
                 }
             }
 
+            // Water leveling
+            for (let swl = 0; swl < generatorProperties.shoreWaterLayers; swl++) {
+                for (let y = 0; y < mapSize[1]; y++) {
+                    for (let x = 0; x < mapSize[0]; x++) {
+                        if ((map[y][x] == 'deepWater') && (isTileNearby(x, y, 'sand') || isTileNearby(x, y, 'shoreWater'))) {
+                            map[y][x] = '*'
+                        }
+                    }
+                }
+            }
+            replaceEvery('*', 'shoreWater')
+
+            for (let swl = 0; swl < generatorProperties.waterLayers; swl++) {
+                for (let y = 0; y < mapSize[1]; y++) {
+                    for (let x = 0; x < mapSize[0]; x++) {
+                        if ((map[y][x] == 'deepWater') && isTileNearby(x, y, 'shoreWater')) {
+                            map[y][x] = '*'
+                        }
+                    }
+                }
+            }
+            replaceEvery('*', 'water')
+
             // Cropping
             for (let y = 0; y < mapSize[1]; y++) {
                 map[y] = map[y].slice(0, mapSize[0]);
@@ -214,7 +263,6 @@ function setup() {
                         height: 2
                     };
                     this.color = '#ffffff';
-                    // Used to define relationships with other animals
                     this.strength = 10;
                     this.speed = {
                         wandering: 0.1,
@@ -237,7 +285,6 @@ function setup() {
                         height: 2
                     };
                     this.color = '#995400';
-                    // Used to define relationships with other animals
                     this.strength = 60;
                     this.speed = {
                         wandering: 1,
@@ -257,9 +304,8 @@ function setup() {
 
         }
         annihilate() {
+            this.pos.x = Infinity;
             clearInterval(this.wanderingInterval);
-            animals = animals.filter(animal => animal.ID != this.ID);
-            delete this;
         }
         startWandering() {
             if (!this.isRunning) {
