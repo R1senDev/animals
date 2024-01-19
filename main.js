@@ -44,7 +44,7 @@ function generateWorld(type) {
             // Creating ocean
             for (let y = 0; y < mapSize[1]; y++) {
                 for (let x = 0; x < mapSize[0]; x++) {
-                    map[y][x] = 'grass';
+                    map[y][x] = 'deepWater';
                 }
             }
 
@@ -54,13 +54,13 @@ function generateWorld(type) {
                 map[randomPos[1]][randomPos[0]] = 'grass';
             }
 
-            let spread_latch = 0;
+            let spreadLatch = 0;
             let spawnPos = 0;
 
             // Growing island up
             let enoughSolidTiles = false;
 
-            while (rSpr < generatorProperties.islandSize || !enoughSolidTiles) {
+            while (spreadLatch < generatorProperties.islandSize || !enoughSolidTiles) {
                 for (let y = 0; y < mapSize[1]; y++) {
                     for (let x = 0; x < mapSize[0]; x++) {
                         if (map[y][x] == 'grass') {
@@ -105,11 +105,11 @@ function generateWorld(type) {
 
                 if (tilesCount[0] / tilesCount[1] <= generatorProperties.minimumWaterPercent) break;
                 
-                rSpr = Math.random() * 101;
+                spreadLatch = Math.random() * 101;
                 console.log(`Generator says: current map props: ${tilesCount} (${(tilesCount[1] / tilesCount[0]) * 100}% solid)`);
                 
                 if (tilesCount[1] < generatorProperties.minimumSolidTiles) {
-                    if (rSpr < generatorProperties.islandSize) console.log('Generator says: not enough tiles, adding iterations');
+                    if (spreadLatch < generatorProperties.islandSize) console.log('Generator says: not enough tiles, adding iterations');
                     enoughSolidTiles = false;
                 } else enoughSolidTiles = true;
             }
