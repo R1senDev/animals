@@ -14,6 +14,7 @@ const mapSize = [100, 100];
 
 const anyWater = ['shoreWater', 'water', 'deepWater'];
 const anyCoal = ['coal', 'coal1', 'coal2', 'coal3'];
+
 const anySolid = ['grass', 'sand'].concat(anyCoal);
 
 const generatorProperties = {
@@ -241,6 +242,7 @@ class Animal {
                 this.speed = {
                     wandering: 0.1,
                     running: 0.3,
+                    sand: 0.3 * 0.5
                 };
                 this.fov = 20;
                 this.surfaces = {
@@ -263,6 +265,7 @@ class Animal {
                 this.speed = {
                     wandering: 0.1,
                     running: 0.4,
+                    sand: 0.4 * 0.5
                 };
                 this.fov = 15;
                 this.surfaces = {
@@ -285,6 +288,7 @@ class Animal {
                 this.speed = {
                     wandering: 1,
                     running: 2.5,
+                    sand: 2.5 * 0.5
                 };
                 this.fov = 20;
                 this.surfaces = {
@@ -294,6 +298,29 @@ class Animal {
                 this.flies = false;
                 this.predator = true;
                 break;
+
+            case 'missile':
+                    this.hp = 1000;
+                    this.damage = 100;
+                    this.size = {
+                        width: 2,
+                        height: 2
+                    };
+                    this.color = '#999999';
+                    this.strength = 10000;
+                    this.speed = {
+                        wandering: 1,
+                        running: 5,
+                        sand: 5
+                    };
+                    this.fov = 1000;
+                    this.surfaces = {
+                        land: true,
+                        water: true
+                    };
+                    this.flies = true;
+                    this.predator = true;
+                    break;
         }
         this.isRunning = false;
         // this.wanderingInterval = setInterval(() => this.startWandering(), 5000);
@@ -382,19 +409,27 @@ function tick() {
             targets.sort((a, b) => a.mag() - b.mag());
             if (targets.length > 0) {
                 animal.target = targets[0];
-                animal.pos.add(animal.target.add((Math.random() * 2 - 1) * (animal.target != null), (Math.random() * 2 - 1) * (animal.target != null)).limit(animal.speed.running));
-                let animal_pos = animal.pos;
-                let animal_target = animal.target;
-                animal_pos.add(animal_target.add((Math.random() * 2 - 1) * (animal.target != null), (Math.random() * 2 - 1) * (animal.target != null)).limit(animal.speed.running));
-                let cell = map[Math.round(animal_pos.y)][Math.round(animal_pos.x)];
-                console.log(animal.surfaces.water, cell);
-                if (cell in anyWater && animal.surfaces.water) {
-                    animal.pos.add(animal.target.add((Math.random() * 2 - 1) * (animal.target != null), (Math.random() * 2 - 1) * (animal.target != null)).limit(animal.speed.running));
+                
+                let newPositionVector = createVector(animal.pos.x, animal.pos.y);
+                let newTargetVector = createVector(animal.target.x, animal.target.y);
+                let addVector = (Math.random() * 2 - 1) * (animal.target != null) + (Math.random() * 2 - 1) * (animal.target != null);
+                
+                let limit = animal.speed.running;
+                let currentCell = map[Math.round(animal.pos.y)][Math.round(animal.pos.x)];
+                if (currentCell == 'sand') {
+                    limit = animal.speed.sand;
+                }
+                newPositionVector.add(newTargetVector.add(addVector).limit(limit));
+                
+                let nextPosCell = map[Math.round(newPositionVector.y)][Math.round(newPositionVector.x)];
+
+                if ((anyWater.includes(nextPosCell) && animal.surfaces.water) || (anySolid.includes(nextPosCell) && animal.surfaces.land)) {
+                    animal.pos.add(animal.target.add(addVector).limit(limit));
                 }
             } else animal.target = null;
 
         } else {
-            let vector = createVector(0, 0);
+            let movementVector = createVector(0, 0);
 
             for (let hunter of animals) {
                 if (Math.sqrt(Math.pow(animal.pos.x - hunter.pos.x, 2) + Math.pow(animal.pos.y - hunter.pos.y, 2)) <= simulation.eatingDistance && hunter.predator) {
@@ -405,7 +440,7 @@ function tick() {
 
             for (let hunter of animals) {
                 if (Math.pow(animal.pos.x - hunter.pos.x, 2) + Math.pow(animal.pos.y - hunter.pos.y, 2) <= Math.pow(animal.fov, 2) && hunter.predator) {
-                    vector.add(p5.Vector.sub(animal.pos, hunter.pos));
+                    movementVector.add(p5.Vector.sub(animal.pos, hunter.pos));
                     animal.isRunning = true;
                     // console.log(`Moved ${animal.type} from ${hunter.type}`);
                 } else {
@@ -413,13 +448,20 @@ function tick() {
                 }
             }
 
-            let animal_pos = createVector(animal.pos.x, animal.pos.y);
-            let vec = createVector(vector.x, vector.y);
-            animal_pos.add(vec.limit(animal.speed.running));
-            let cell = map[Math.round(animal_pos.y)][Math.round(animal_pos.x)];
-            console.log(`${animal.surfaces.water} ${cell} isWater=${anyWater.includes(cell)}\n${animal.surfaces.land} ${cell} isLand=${anySolid.includes(cell)}`);
-            if ((anyWater.includes(cell) && animal.surfaces.water) || (anySolid.includes(cell) && animal.surfaces.land)) {
-                animal.pos.add(vector.limit(animal.speed.running));
+            let newPositionVector = createVector(animal.pos.x, animal.pos.y);
+            let newMovementVector = createVector(movementVector.x, movementVector.y);
+
+            let limit = animal.speed.running;
+            let currentCell = map[Math.round(animal.pos.y)][Math.round(animal.pos.x)];
+            newPositionVector.add(newMovementVector.limit(limit));
+            if (currentCell == 'sand') {
+                limit = animal.speed.sand;
+            }
+
+            let nextPosCell = map[Math.round(newPositionVector.y)][Math.round(newPositionVector.x)];console.log(`${animal.surfaces.water} ${nextPosCell} isWater=${anyWater.includes(nextPosCell)}\n${animal.surfaces.land} ${nextPosCell} isLand=${anySolid.includes(nextPosCell)}`);
+            
+            if ((anyWater.includes(nextPosCell) && animal.surfaces.water) || (anySolid.includes(nextPosCell) && animal.surfaces.land)) {
+                animal.pos.add(movementVector.limit(limit));
             }
         }
 
