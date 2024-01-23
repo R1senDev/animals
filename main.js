@@ -12,6 +12,10 @@ const dev = {
 const pixelSize = 5;
 const mapSize = [100, 100];
 
+const anyWater = ['shoreWater', 'water', 'deepWater'];
+const anyCoal = ['coal', 'coal1', 'coal2', 'coal3'];
+const anySolid = ['grass', 'sand'].concat(anyCoal);
+
 const generatorProperties = {
     islandsCount: 3,
     // This is not the actual size of the island, but a side
@@ -179,7 +183,7 @@ function generateWorld(type) {
                 for (let y = 0; y < mapSize[1]; y++) {
                     for (let x = 0; x < mapSize[0]; x++) {
                         if ((map[y][x] == 'deepWater') && (isTileNearby(x, y, 'sand') || isTileNearby(x, y, 'shoreWater'))) {
-                            map[y][x] = '*'
+                            map[y][x] = '*';
                         }
                     }
                 }
@@ -190,12 +194,12 @@ function generateWorld(type) {
                 for (let y = 0; y < mapSize[1]; y++) {
                     for (let x = 0; x < mapSize[0]; x++) {
                         if ((map[y][x] == 'deepWater') && isTileNearby(x, y, 'shoreWater')) {
-                            map[y][x] = '*'
+                            map[y][x] = '*';
                         }
                     }
                 }
             }
-            replaceEvery('*', 'water')
+            replaceEvery('*', 'water');
 
             // Cropping
             for (let y = 0; y < mapSize[1]; y++) {
@@ -213,121 +217,114 @@ function generateWorld(type) {
     }
 }
 
-let nextID = 0;
+class Animal {
+    constructor(x, y, type, special = {
+        tracking: false,
+    }) {
+        this.ID = nextID;
+        nextID++;
+        this.pos = createVector(x, y);
+        this.type = type;
+        this.special = special;
+        this.target = null;
+        switch (type) {
+            case 'wolf':
+                this.hp = 100;
+                this.damage = 25;
+                this.size = {
+                    width: 2,
+                    height: 2
+                };
+                this.color = '#4d4d4d';
+                // Used to define relationships with other animals
+                this.strength = 50;
+                this.speed = {
+                    wandering: 0.1,
+                    running: 0.3,
+                };
+                this.fov = 20;
+                this.surfaces = {
+                    land: true,
+                    water: false
+                };
+                this.flies = false;
+                this.predator = true;
+                break;
 
-let __Animal__ = null;
+            case 'sheep':
+                this.hp = 100;
+                this.damage = 0;
+                this.size = {
+                    width: 2,
+                    height: 2
+                };
+                this.color = '#ffffff';
+                this.strength = 10;
+                this.speed = {
+                    wandering: 0.1,
+                    running: 0.4,
+                };
+                this.fov = 15;
+                this.surfaces = {
+                    land: true,
+                    water: false
+                };
+                this.flies = false;
+                this.predator = false;
+                break;
 
-function setup() {
-    createCanvas(window.innerWidth, window.innerHeight);
-    generateWorld('classic');
-
-    __Animal__ = class Animal {
-        constructor(x, y, type, special = {
-            tracking: false,
-        }) {
-            this.ID = nextID;
-            nextID++;
-            this.pos = createVector(x, y);
-            this.type = type;
-            this.special = special;
-            this.target = null;
-            switch (type) {
-                case 'wolf':
-                    this.hp = 100;
-                    this.damage = 25;
-                    this.size = {
-                        width: 2,
-                        height: 2
-                    };
-                    this.color = '#4d4d4d';
-                    // Used to define relationships with other animals
-                    this.strength = 50;
-                    this.speed = {
-                        wandering: 0.1,
-                        running: 0.3,
-                    };
-                    this.fov = 20;
-                    this.surfaces = {
-                        land: true,
-                        water: false
-                    };
-                    this.flies = false;
-                    this.predator = true;
-                    break;
-
-                case 'sheep':
-                    this.hp = 100;
-                    this.damage = 0;
-                    this.size = {
-                        width: 2,
-                        height: 2
-                    };
-                    this.color = '#ffffff';
-                    this.strength = 10;
-                    this.speed = {
-                        wandering: 0.1,
-                        running: 0.4,
-                    };
-                    this.fov = 15;
-                    this.surfaces = {
-                        land: true,
-                        water: false
-                    };
-                    this.flies = false;
-                    this.predator = false;
-                    break;
-
-                case 'lion':
-                    this.hp = 150;
-                    this.damage = 35;
-                    this.size = {
-                        width: 2,
-                        height: 2
-                    };
-                    this.color = '#995400';
-                    this.strength = 60;
-                    this.speed = {
-                        wandering: 1,
-                        running: 2.5,
-                    };
-                    this.fov = 20;
-                    this.surfaces = {
-                        land: true,
-                        water: false
-                    };
-                    this.flies = false;
-                    this.predator = true;
-                    break;
-            }
-            this.isRunning = false;
-            // this.wanderingInterval = setInterval(() => this.startWandering(), 5000);
-
+            case 'lion':
+                this.hp = 150;
+                this.damage = 35;
+                this.size = {
+                    width: 2,
+                    height: 2
+                };
+                this.color = '#995400';
+                this.strength = 60;
+                this.speed = {
+                    wandering: 1,
+                    running: 2.5,
+                };
+                this.fov = 20;
+                this.surfaces = {
+                    land: true,
+                    water: false
+                };
+                this.flies = false;
+                this.predator = true;
+                break;
         }
-        annihilate() {
-            clearInterval(this.wanderingInterval);
-            animals = animals.filter(animal => animal.ID != this.ID);
-            delete this;
+        this.isRunning = false;
+        // this.wanderingInterval = setInterval(() => this.startWandering(), 5000);
 
-        }
-        startWandering() {
-            if (!this.isRunning) {
-                let cachedThis = this;
-                cachedThis.wanderingDir = createVector(Math.random() * 10 - 5, Math.random() * 10 - 5);
-                cachedThis.wi = setInterval(function() {
-                    cachedThis.pos.add(cachedThis.wanderingDir);
-                }, 10);
-                this.wdt = setTimeout(function() {
-                    clearInterval(cachedThis.wi);
-                }, 5000);
-            }
+    }
+    annihilate() {
+        clearInterval(this.wanderingInterval);
+        animals = animals.filter(animal => animal.ID != this.ID);
+        delete this;
+
+    }
+    startWandering() {
+        if (!this.isRunning) {
+            let cachedThis = this;
+            cachedThis.wanderingDir = createVector(Math.random() * 10 - 5, Math.random() * 10 - 5);
+            cachedThis.wi = setInterval(function() {
+                cachedThis.pos.add(cachedThis.wanderingDir);
+            }, 10);
+            this.wdt = setTimeout(function() {
+                clearInterval(cachedThis.wi);
+            }, 5000);
         }
     }
 }
 
-setTimeout(function() {
-    animals.push(new __Animal__(20, 20, 'sheep'));
-    // animals.push(new __Animal__(35, 35, 'wolf'));
-}, 100);
+let nextID = 0;
+
+function setup() {
+    createCanvas(window.innerWidth, window.innerHeight);
+    generateWorld('classic');
+}
 
 document.addEventListener('mousedown', function(event) {
     let animal = '';
@@ -344,7 +341,7 @@ document.addEventListener('mousedown', function(event) {
             } else {
                 animal = 'sheep';
             }
-            animals.push(new __Animal__(target.x, target.y, animal));
+            animals.push(new Animal(target.x, target.y, animal));
         }
     }
 });
@@ -365,21 +362,17 @@ function tick() {
     frameRate(0);
     for (let animal of animals) {
         if (animal.predator) {
-            let vector = createVector(0, 0);
-            let targets = []
+            let targets = [];
 
             for (let victim of animals) {
                 if (Math.pow(animal.pos.x - victim.pos.x, 2) + Math.pow(animal.pos.y - victim.pos.y, 2) <= Math.pow(animal.fov, 2)) {
                     if (animal.type != victim.type) {
                         animal.isRunning = true;
                         if (animal.strength < victim.strength) {
-                            vector.add(p5.Vector.sub(animal.pos, victim.pos));
-                            targets.push(p5.Vector.sub(animal.pos, victim.pos));
-
                             break;
                             // console.log(`Moved ${animal.type} from ${victim.type}`);
                         } else {
-                            vector.add(p5.Vector.sub(victim.pos, animal.pos));
+                            targets.push(p5.Vector.sub(victim.pos, animal.pos));
                             // console.log(`Moved ${animal.type} to ${victim.type}`);
                         }
                     }
@@ -387,9 +380,17 @@ function tick() {
             }
 
             targets.sort((a, b) => a.mag() - b.mag());
-            if (targets.length) {
+            if (targets.length > 0) {
                 animal.target = targets[0];
                 animal.pos.add(animal.target.add((Math.random() * 2 - 1) * (animal.target != null), (Math.random() * 2 - 1) * (animal.target != null)).limit(animal.speed.running));
+                let animal_pos = animal.pos;
+                let animal_target = animal.target;
+                animal_pos.add(animal_target.add((Math.random() * 2 - 1) * (animal.target != null), (Math.random() * 2 - 1) * (animal.target != null)).limit(animal.speed.running));
+                let cell = map[Math.round(animal_pos.y)][Math.round(animal_pos.x)];
+                console.log(animal.surfaces.water, cell);
+                if (cell in anyWater && animal.surfaces.water) {
+                    animal.pos.add(animal.target.add((Math.random() * 2 - 1) * (animal.target != null), (Math.random() * 2 - 1) * (animal.target != null)).limit(animal.speed.running));
+                }
             } else animal.target = null;
 
         } else {
@@ -412,7 +413,14 @@ function tick() {
                 }
             }
 
-            animal.pos.add(vector.limit(animal.speed.running));
+            let animal_pos = createVector(animal.pos.x, animal.pos.y);
+            let vec = createVector(vector.x, vector.y);
+            animal_pos.add(vec.limit(animal.speed.running));
+            let cell = map[Math.round(animal_pos.y)][Math.round(animal_pos.x)];
+            console.log(`${animal.surfaces.water} ${cell} isWater=${anyWater.includes(cell)}\n${animal.surfaces.land} ${cell} isLand=${anySolid.includes(cell)}`);
+            if ((anyWater.includes(cell) && animal.surfaces.water) || (anySolid.includes(cell) && animal.surfaces.land)) {
+                animal.pos.add(vector.limit(animal.speed.running));
+            }
         }
 
         if (animal.pos.x < 0) animal.pos.x = 0;
