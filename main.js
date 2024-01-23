@@ -218,135 +218,6 @@ function generateWorld(type) {
     }
 }
 
-class Animal {
-    constructor(x, y, type, special = {
-        tracking: false,
-    }) {
-        this.ID = nextID;
-        nextID++;
-        this.pos = createVector(x, y);
-        this.type = type;
-        this.special = special;
-        this.target = null;
-        switch (type) {
-            case 'wolf':
-                this.hp = 100;
-                this.damage = 25;
-                this.size = {
-                    width: 2,
-                    height: 2
-                };
-                this.color = '#4d4d4d';
-                // Used to define relationships with other animals
-                this.strength = 50;
-                this.speed = {
-                    wandering: 0.1,
-                    running: 0.3,
-                    sand: 0.3 * 0.5
-                };
-                this.fov = 20;
-                this.surfaces = {
-                    land: true,
-                    water: false
-                };
-                this.flies = false;
-                this.predator = true;
-                break;
-
-            case 'sheep':
-                this.hp = 100;
-                this.damage = 0;
-                this.size = {
-                    width: 2,
-                    height: 2
-                };
-                this.color = '#ffffff';
-                this.strength = 10;
-                this.speed = {
-                    wandering: 0.1,
-                    running: 0.4,
-                    sand: 0.4 * 0.5
-                };
-                this.fov = 15;
-                this.surfaces = {
-                    land: true,
-                    water: false
-                };
-                this.flies = false;
-                this.predator = false;
-                break;
-
-            case 'lion':
-                this.hp = 150;
-                this.damage = 35;
-                this.size = {
-                    width: 2,
-                    height: 2
-                };
-                this.color = '#995400';
-                this.strength = 60;
-                this.speed = {
-                    wandering: 1,
-                    running: 2.5,
-                    sand: 2.5 * 0.5
-                };
-                this.fov = 20;
-                this.surfaces = {
-                    land: true,
-                    water: false
-                };
-                this.flies = false;
-                this.predator = true;
-                break;
-
-            case 'missile':
-                    this.hp = 1000;
-                    this.damage = 100;
-                    this.size = {
-                        width: 2,
-                        height: 2
-                    };
-                    this.color = '#999999';
-                    this.strength = 10000;
-                    this.speed = {
-                        wandering: 1,
-                        running: 5,
-                        sand: 5
-                    };
-                    this.fov = 1000;
-                    this.surfaces = {
-                        land: true,
-                        water: true
-                    };
-                    this.flies = true;
-                    this.predator = true;
-                    break;
-        }
-        this.isRunning = false;
-        // this.wanderingInterval = setInterval(() => this.startWandering(), 5000);
-
-    }
-    annihilate() {
-        clearInterval(this.wanderingInterval);
-        animals = animals.filter(animal => animal.ID != this.ID);
-        delete this;
-
-    }
-    startWandering() {
-        if (!this.isRunning) {
-            let cachedThis = this;
-            cachedThis.wanderingDir = createVector(Math.random() * 10 - 5, Math.random() * 10 - 5);
-            cachedThis.wi = setInterval(function() {
-                cachedThis.pos.add(cachedThis.wanderingDir);
-            }, 10);
-            this.wdt = setTimeout(function() {
-                clearInterval(cachedThis.wi);
-            }, 5000);
-        }
-    }
-}
-
-let nextID = 0;
 
 function setup() {
     createCanvas(window.innerWidth, window.innerHeight);
@@ -364,11 +235,10 @@ document.addEventListener('mousedown', function(event) {
     if (target.x >= 0 && target.x < mapSize[0] && target.y >= 0 && target.y < mapSize[1]) {
         if (map[target.y][target.x] != 'water' && map[target.y][target.x] != 'deepWater' && map[target.y][target.x] != 'shoreWater') {
             if (event.button == 0) {
-                animal = 'wolf';
+                animals.push(new Wolf(target.x, target.y));
             } else {
-                animal = 'sheep';
+                animals.push(new Sheep(target.x, target.y));
             }
-            animals.push(new Animal(target.x, target.y, animal));
         }
     }
 });
@@ -466,7 +336,7 @@ function tick() {
                 if ((anyWater.includes(nextPosCell) && animal.surfaces.water) || (anySolid.includes(nextPosCell) && animal.surfaces.land)) {
                     animal.pos.add(movementVector.limit(limit));
                 }
-            } catch (e) {}
+            } catch {}
         }
 
         if (animal.pos.x < 0) animal.pos.x = 0;
