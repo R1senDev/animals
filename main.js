@@ -420,12 +420,14 @@ function tick() {
                     limit = animal.speed.sand;
                 }
                 newPositionVector.add(newTargetVector.add(addVector).limit(limit));
-                
-                let nextPosCell = map[Math.round(newPositionVector.y)][Math.round(newPositionVector.x)];
 
-                if ((anyWater.includes(nextPosCell) && animal.surfaces.water) || (anySolid.includes(nextPosCell) && animal.surfaces.land)) {
-                    animal.pos.add(animal.target.add(addVector).limit(limit));
-                }
+                try {
+                    let nextPosCell = map[Math.round(newPositionVector.y)][Math.round(newPositionVector.x)];
+
+                    if ((anyWater.includes(nextPosCell) && animal.surfaces.water) || (anySolid.includes(nextPosCell) && animal.surfaces.land)) {
+                        animal.pos.add(animal.target.add(addVector).limit(limit));
+                    }
+                } catch (e) {}
             } else animal.target = null;
 
         } else {
@@ -458,17 +460,19 @@ function tick() {
                 limit = animal.speed.sand;
             }
 
-            let nextPosCell = map[Math.round(newPositionVector.y)][Math.round(newPositionVector.x)];console.log(`${animal.surfaces.water} ${nextPosCell} isWater=${anyWater.includes(nextPosCell)}\n${animal.surfaces.land} ${nextPosCell} isLand=${anySolid.includes(nextPosCell)}`);
+            try {
+                let nextPosCell = map[Math.round(newPositionVector.y)][Math.round(newPositionVector.x)];console.log(`${animal.surfaces.water} ${nextPosCell} isWater=${anyWater.includes(nextPosCell)}\n${animal.surfaces.land} ${nextPosCell} isLand=${anySolid.includes(nextPosCell)}`);
             
-            if ((anyWater.includes(nextPosCell) && animal.surfaces.water) || (anySolid.includes(nextPosCell) && animal.surfaces.land)) {
-                animal.pos.add(movementVector.limit(limit));
-            }
+                if ((anyWater.includes(nextPosCell) && animal.surfaces.water) || (anySolid.includes(nextPosCell) && animal.surfaces.land)) {
+                    animal.pos.add(movementVector.limit(limit));
+                }
+            } catch (e) {}
         }
 
         if (animal.pos.x < 0) animal.pos.x = 0;
         if (animal.pos.y < 0) animal.pos.y = 0;
-        if (animal.pos.x > mapSize[0]) animal.pos.x = mapSize[0] - 1.5;
-        if (animal.pos.y > mapSize[1]) animal.pos.y = mapSize[1] - 1.5;
+        if (animal.pos.x + 1 > mapSize[0]) animal.pos.x = mapSize[0] - 1.5;
+        if (animal.pos.y + 1 > mapSize[1]) animal.pos.y = mapSize[1] - 1.5;
 
         if (animal.special.tracking) console.log(`${animal.type}#${animal.ID}\t${animal.pos.x}:${animal.pos.y}`);
     }
