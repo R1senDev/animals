@@ -418,7 +418,8 @@ function draw() {
 
     for (let animal of animals) {
         fill(color(animal.color));
-        rect(animal.pos.x * pixelSize, animal.pos.y * pixelSize, pixelSize, pixelSize);
+        circle(animal.pos.x * pixelSize, animal.pos.y * pixelSize, pixelSize * 1.2);
+        // rect(animal.pos.x * pixelSize, animal.pos.y * pixelSize, pixelSize, pixelSize);
     }
 
     fpls += 1;
