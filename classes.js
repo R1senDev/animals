@@ -38,6 +38,15 @@ class Animal {
             }, 5000);
         }
     }
+
+    under(map) {
+        /**
+         * @param  {Array[][]} map
+         * @return {String}
+         */
+
+        return map[Math.round(this.pos.y)][Math.round(this.pos.x)];
+    }
     
 }
 

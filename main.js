@@ -40,6 +40,20 @@ const simulation = {
 };
 
 
+function solidFilter(arr) {
+    let out = arr;
+
+    for (let y = 0; y < arr.length; y++) {
+        for (let x = 0; x < arr[y].length; x++) {
+            if (anySolid.includes(arr[y][x])) out[y][x] = 1;
+            else out[y][x] = 0;
+        }
+    }
+
+    return out;
+}
+
+
 function isTileNearby(x, y, type) {
     for (let ix = x - 1; ix < x + 2; ix++) {
         for (let iy = y - 1; iy < y + 2; iy++) {
@@ -64,8 +78,13 @@ function replaceEvery(origin, target) {
 
 
 function generateWorld(type) {
+    let enoughSolidTiles = false;
+    let spreadLatch = 0;
+    let spawnPos = 0;
+
     map = [];
     switch (type) {
+
         case 'classic':
             // Cleaning map
             for (let e = 0; e < mapSize[1]; e++) {
@@ -86,9 +105,9 @@ function generateWorld(type) {
             }
             
             // Growing island up
-            let enoughSolidTiles = false;
-            let spreadLatch = 0;
-            let spawnPos = 0;
+            // let enoughSolidTiles = false;
+            // let spreadLatch = 0;
+            // let spawnPos = 0;
 
             while (spreadLatch < generatorProperties.islandSize || !enoughSolidTiles) {
                 for (let y = 0; y < mapSize[1]; y++) {
@@ -209,6 +228,147 @@ function generateWorld(type) {
 
             break;
 
+        case 'reverse':
+
+            // Cleaning map
+            for (let e = 0; e < mapSize[1]; e++) {
+                map.push([]);
+            }
+
+            // Creating terrain
+            for (let y = 0; y < mapSize[1]; y++) {
+                for (let x = 0; x < mapSize[0]; x++) {
+                    map[y][x] = 'grass';
+                }
+            }
+
+            // Seeding lakes
+            for (let i = 0; i < generatorProperties.islandsCount; i++) {
+                let randomPos = [Math.floor(Math.random() * mapSize[0]), Math.floor(Math.random() * mapSize[1])];
+                map[randomPos[1]][randomPos[0]] = 'deepWater';
+            }
+
+            // Growing island up
+
+            while (spreadLatch < generatorProperties.islandSize || !enoughSolidTiles) {
+                for (let y = 0; y < mapSize[1]; y++) {
+                    for (let x = 0; x < mapSize[0]; x++) {
+
+                        if (map[y][x] == 'deepWater') {
+                            spawnPos = Math.floor(Math.random() * 4);
+
+                            switch (spawnPos) {
+
+                                case 0:
+                                    try {
+                                        map[y][x - 1] = 'deepWater';
+                                    } catch {}
+                                    break;
+
+
+                                case 1:
+                                    try {
+                                        map[y + 1][x] = 'deepWater';
+                                    } catch {}
+                                    break;
+
+                                case 2:
+                                    try {
+                                        map[y][x + 1] = 'deepWater';
+                                    } catch {}
+                                    break;
+
+                                case 3:
+                                    try {
+                                        map[y - 1][x] = 'deepWater';
+                                    } catch {}
+
+                                    break;
+                            }
+                        }
+                    }
+                }
+
+                // Counting tiles' types
+                // [water, land]
+                let tilesCount = [0, 0];
+                for (let y = 0; y < mapSize[1]; y++) {
+                    for (let x = 0; x < mapSize[0]; x++) {
+                        if (map[y][x] == 'deepWater') tilesCount[1] += 1;
+                        else tilesCount[0] += 1;
+                    }
+                }
+
+                if (tilesCount[0] / tilesCount[1] <= generatorProperties.minimumWaterPercent) break;
+
+                spreadLatch = Math.random() * 101;
+                console.log(`Generator says: current map props: ${tilesCount} (${(tilesCount[1] / (mapSize[0] * mapSize[1]) * 100).toFixed(2)}% solid)`);
+
+                if (tilesCount[1] < generatorProperties.minimumSolidTiles) {
+                    if (spreadLatch < generatorProperties.islandSize) console.log('Generator says: not enough tiles, adding iterations');
+                    enoughSolidTiles = false;
+                } else enoughSolidTiles = true;
+            }
+
+            // Sand generation
+            for (let y = 0; y < mapSize[1]; y++) {
+                for (let x = 0; x < mapSize[0]; x++) {
+                    try {
+                        if ((map[y][x] == 'grass' || map[y][x] == 'sand') && isTileNearby(x, y, 'deepWater')) {
+                            map[y][x] = 'sand';
+                        }
+                    } catch {}
+                }
+            }
+
+            for (let generated_layers = 0; generated_layers < generatorProperties.sandLayers - 1; generated_layers++) {
+                for (let y = 0; y < mapSize[1]; y++) {
+                    for (let x = 0; x < mapSize[0]; x++) {
+                        if (map[y][x] == 'sand') {
+                            for (let y1 = y - 1; y1 < y + 1; y1++) {
+                                try {
+                                    for (let x1 = x - 1; x1 < x + 1; x1++) {
+                                        if (map[y1][x1] == 'grass') {
+                                            map[y1][x1] = 'sand';
+                                        }
+                                    }
+                                } catch {}
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Water leveling
+            for (let swl = 0; swl < generatorProperties.shoreWaterLayers; swl++) {
+                for (let y = 0; y < mapSize[1]; y++) {
+                    for (let x = 0; x < mapSize[0]; x++) {
+                        if ((map[y][x] == 'deepWater') && (isTileNearby(x, y, 'sand') || isTileNearby(x, y, 'shoreWater'))) {
+                            map[y][x] = '*';
+                        }
+                    }
+                }
+            }
+            replaceEvery('*', 'shoreWater')
+
+            for (let swl = 0; swl < generatorProperties.waterLayers; swl++) {
+                for (let y = 0; y < mapSize[1]; y++) {
+                    for (let x = 0; x < mapSize[0]; x++) {
+                        if ((map[y][x] == 'deepWater') && isTileNearby(x, y, 'shoreWater')) {
+                            map[y][x] = '*';
+                        }
+                    }
+                }
+            }
+            replaceEvery('*', 'water');
+
+            // Cropping
+            for (let y = 0; y < mapSize[1]; y++) {
+                map[y] = map[y].slice(0, mapSize[0]);
+            }
+
+            break;
+
         case 'debug':
             map = [
                 ['deepWater', 'water', 'shoreWater', 'sand', 'grass', 'fire'],
@@ -221,7 +381,7 @@ function generateWorld(type) {
 
 function setup() {
     createCanvas(window.innerWidth, window.innerHeight);
-    generateWorld('classic');
+    generateWorld('reverse');
 }
 
 document.addEventListener('mousedown', function(event) {
@@ -285,7 +445,7 @@ function tick() {
                 let addVector = (Math.random() * 2 - 1) * (animal.target != null) + (Math.random() * 2 - 1) * (animal.target != null);
                 
                 let limit = animal.speed.running;
-                let currentCell = map[Math.round(animal.pos.y)][Math.round(animal.pos.x)];
+                let currentCell = animal.under(map);
                 if (currentCell == 'sand') {
                     limit = animal.speed.sand;
                 }
@@ -306,7 +466,6 @@ function tick() {
             for (let hunter of animals) {
                 if (Math.sqrt(Math.pow(animal.pos.x - hunter.pos.x, 2) + Math.pow(animal.pos.y - hunter.pos.y, 2)) <= simulation.eatingDistance && hunter.predator) {
                     animal.annihilate();
-                    console.log(`Annihilated ${animal.type}#${animal.ID}`);
                 }
             }
 
@@ -324,14 +483,14 @@ function tick() {
             let newMovementVector = createVector(movementVector.x, movementVector.y);
 
             let limit = animal.speed.running;
-            let currentCell = map[Math.round(animal.pos.y)][Math.round(animal.pos.x)];
+            let currentCell = animal.under(map);
             newPositionVector.add(newMovementVector.limit(limit));
             if (currentCell == 'sand') {
                 limit = animal.speed.sand;
             }
 
             try {
-                let nextPosCell = map[Math.round(newPositionVector.y)][Math.round(newPositionVector.x)];console.log(`${animal.surfaces.water} ${nextPosCell} isWater=${anyWater.includes(nextPosCell)}\n${animal.surfaces.land} ${nextPosCell} isLand=${anySolid.includes(nextPosCell)}`);
+                let nextPosCell = map[Math.round(newPositionVector.y)][Math.round(newPositionVector.x)];
             
                 if ((anyWater.includes(nextPosCell) && animal.surfaces.water) || (anySolid.includes(nextPosCell) && animal.surfaces.land)) {
                     animal.pos.add(movementVector.limit(limit));
@@ -360,7 +519,7 @@ setInterval(function() {
     fps = fpls;
     fpls = 0;
 
-    // console.log(`FPS: ${fps} | UPS: ${ups}`);
+    console.log(`FPS: ${fps} | UPS: ${ups}`);
 }, 1000);
 
 function draw() {
@@ -419,6 +578,10 @@ function draw() {
     for (let animal of animals) {
         fill(color(animal.color));
         circle(animal.pos.x * pixelSize, animal.pos.y * pixelSize, pixelSize * 1.2);
+        fill(color('#ff0000'));
+        let tmp = getFartherIndex(accessableZone(solidFilter(map), Math.round(animal.pos.x), Math.round(animal.pos.y)   ), Math.round(animal.pos.x), Math.round(animal.pos.y));
+        console.log(tmp);
+        circle(tmp[0], tmp[1], pixelSize);
         // rect(animal.pos.x * pixelSize, animal.pos.y * pixelSize, pixelSize, pixelSize);
     }
 
