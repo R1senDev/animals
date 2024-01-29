@@ -125,8 +125,8 @@ class Lion extends Animal {
         this.strength = 60;
         this.speed = {
             wandering: 1,
-            running: 2.5,
-            sand: 2.5 * 0.5
+            running: 0.3,
+            sand: 0.3 * 0.5
         };
         this.fov = 20;
         this.surfaces = {

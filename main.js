@@ -225,6 +225,7 @@ function setup() {
 }
 
 document.addEventListener('mousedown', function(event) {
+    console.log(event.button);
     let animal = '';
     let target = {
         x: Math.floor(event.pageX / pixelSize),
@@ -236,6 +237,8 @@ document.addEventListener('mousedown', function(event) {
         if (map[target.y][target.x] != 'water' && map[target.y][target.x] != 'deepWater' && map[target.y][target.x] != 'shoreWater') {
             if (event.button == 0) {
                 animals.push(new Wolf(target.x, target.y));
+            } else if (event.button == 1) {
+                animals.push(new Lion(target.x, target.y));
             } else {
                 animals.push(new Sheep(target.x, target.y));
             }
